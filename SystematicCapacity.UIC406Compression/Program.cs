@@ -1,5 +1,6 @@
 ﻿using System;
 using SystematicCapacity.Core;
+using System.IO;
 
 namespace SystematicCapacity.UIC406Compression
 {
@@ -47,7 +48,10 @@ namespace SystematicCapacity.UIC406Compression
         {
             try
             {
+                StreamReader sr = new StreamReader(fileName);
+                sr.ReadLine();
 
+                sr.Close();
             }
             catch(Exception ex)
             {
