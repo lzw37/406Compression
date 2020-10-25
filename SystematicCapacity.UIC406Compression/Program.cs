@@ -17,6 +17,35 @@ namespace SystematicCapacity.UIC406Compression
             // read required data from 'Data' directory
             ReadData(dataRepository, "Data/");
 
+            // select a timetable compression method
+            CompressionMethods? method = null;
+
+            // generate a timetable handler associated with the selected method 
+            TimetableCompressionHandler timetableCompressionHandler;
+
+            switch (method)
+            {
+                case CompressionMethods.IntegerProgramming:
+                    timetableCompressionHandler = new LPTimetableCompressionHandler();
+                    break;
+                case CompressionMethods.EventActivityNetwork:
+                    timetableCompressionHandler = new EANetworkTimetableCompressionHandler();
+                    break;
+                default:
+                    timetableCompressionHandler = null;
+                    break;
+            }
+
+            // run a timetable compression handler
+            if (timetableCompressionHandler!=null)
+            {
+                timetableCompressionHandler.Execute();
+            }
+
+            // output a compressed timetable
+            WriteData(dataRepository, "Solution/");
+
+            // terminate the program
             Console.WriteLine("UIC 406 timetable compression terminated. Press Enter to escape.");
             Console.Read();
         }
@@ -73,6 +102,11 @@ namespace SystematicCapacity.UIC406Compression
                 Console.WriteLine("Configuration reading error: {0}", ex.Message);
                 Console.ResetColor();
             }
+        }
+
+        static void WriteData(GlobalDataRepository dataRepository, string directory)
+        {
+
         }
     }
 }
