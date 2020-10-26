@@ -9,32 +9,32 @@ namespace SystematicCapacity.UIC406Compression
     internal class Program
     {
         /// <summary>
-        /// basic data directory
+        /// Basic data directory
         /// </summary>
-        static internal string basicDataDirectory;
+        static internal string BasicDataDirectory;
 
         /// <summary>
-        /// solution output data directory
+        /// Solution output data directory
         /// </summary>
-        static internal string solutionDataDirectory;
+        static internal string SolutionDataDirectory;
 
         /// <summary>
-        /// applied compression method
+        /// Applied compression method
         /// </summary>
-        static CompressionMethods? compressionMethod;
+        internal static CompressionMethods? compressionMethod;
 
         /// <summary>
-        /// global data repository
+        /// Global data repository
         /// </summary>
         internal static GlobalDataRepository DataRepository;
         
         /// <summary>
-        /// output file level, 0: only solution files; 1: with debug files
+        /// Output file level, 0: only solution files; 1: with debug files
         /// </summary>
         internal static int OutputLevel;
 
         /// <summary>
-        /// the timetable compression handler
+        /// The timetable compression handler
         /// </summary>
         static TimetableCompressionHandler timetableCompressionHandler;
 
@@ -47,10 +47,10 @@ namespace SystematicCapacity.UIC406Compression
             DataRepository = new GlobalDataRepository();
 
             // read timetable compression configuration from *.json file 
-            ReadConfig("./Data/Config.json");
+            ReadConfig("../../../Data/Config.json");
 
             // read required data from a given directory
-            ReadData(basicDataDirectory);
+            ReadData(BasicDataDirectory);
 
             // generate a timetable handler associated with the selected method 
             switch (compressionMethod)
@@ -73,15 +73,21 @@ namespace SystematicCapacity.UIC406Compression
             }
 
             // output a compressed timetable to a given directory
-            WriteData(solutionDataDirectory);
+            WriteData(SolutionDataDirectory);
 
             // terminate the program
             Console.WriteLine("UIC 406 timetable compression terminated. Press Enter to escape.");
             Console.Read();
         }
 
+        /// <summary>
+        /// Read basic data
+        /// </summary>
+        /// <param name="directory"></param>
         static void ReadData(string directory)
         {
+            Console.WriteLine("Reading basic data...");
+
             // read basic data
             try
             {
@@ -103,6 +109,10 @@ namespace SystematicCapacity.UIC406Compression
             ReadConfig(directory + "Config.json");
         }
 
+        /// <summary>
+        /// Read original timetable data
+        /// </summary>
+        /// <param name="fileName"></param>
         static void ReadOrgTimetable(string fileName)
         {
             try
@@ -130,16 +140,22 @@ namespace SystematicCapacity.UIC406Compression
             }
         }
 
+        /// <summary>
+        /// Read timetable compression configuration
+        /// </summary>
+        /// <param name="fileName"></param>
         static void ReadConfig(string fileName)
         {
+            Console.WriteLine("Reading configuration file...");
+
             try
             {
                 StreamReader sr = File.OpenText(fileName);
 
                 JObject jobj = JObject.Parse(sr.ReadToEnd());
 
-                basicDataDirectory = jobj.Property("basic_data_directory").Value.ToString();
-                solutionDataDirectory = jobj.Property("solution_data_directory").Value.ToString();
+                BasicDataDirectory = jobj.Property("basic_data_directory").Value.ToString();
+                SolutionDataDirectory = jobj.Property("solution_data_directory").Value.ToString();
                 compressionMethod = (CompressionMethods)Enum.Parse(typeof(CompressionMethods),
                     jobj.Property("compression_method").Value.ToString());
                 OutputLevel = Convert.ToInt32(jobj.Property("output_file_level").Value.ToString());
@@ -154,9 +170,24 @@ namespace SystematicCapacity.UIC406Compression
             }
         }
 
+        /// <summary>
+        /// Write the compressed timetable data
+        /// </summary>
+        /// <param name="directory"></param>
         static void WriteData(string directory)
         {
+            Console.WriteLine("Writing compressed timetable file...");
 
+            StreamWriter sw = new StreamWriter(SolutionDataDirectory + "CompressedTimetable.csv");
+            sw.WriteLine("TrainID,StationID,ArrivalTime,DepartureTime");
+            foreach(Train tr in DataRepository.serviceRepo.TrainList)
+            {
+                foreach(Station sta in tr.Timetable.Keys)
+                {
+                    sw.WriteLine("{0},{1},{2},{3}", tr.ID, sta.ID, tr.Timetable[sta]["arrival"], tr.Timetable[sta]["departure"]);
+                }
+            }
+            sw.Close();
         }
     }
 }

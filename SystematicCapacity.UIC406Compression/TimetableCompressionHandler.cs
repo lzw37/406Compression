@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.Design;
 
 namespace SystematicCapacity.UIC406Compression
@@ -14,9 +15,17 @@ namespace SystematicCapacity.UIC406Compression
 
         public void Execute()
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Compressing timetable...\nApplied method: {0}", Method.ToString());
+            Console.ResetColor();
+
             Initialize();
             Compress();
             ParseCompressedTimetable();
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Timetable compression finished!");
+            Console.ResetColor();
         }
 
         /// <summary>

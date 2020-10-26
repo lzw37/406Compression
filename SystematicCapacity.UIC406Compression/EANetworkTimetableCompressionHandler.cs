@@ -1,7 +1,9 @@
 ﻿using System;
 using System.CodeDom.Compiler;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Linq;
 using System.Text;
 using SystematicCapacity.Core;
@@ -13,10 +15,19 @@ namespace SystematicCapacity.UIC406Compression
     /// </summary>
     public class EANTimetableCompressionHandler : TimetableCompressionHandler
     {
+        /// <summary>
+        /// Global event list
+        /// </summary>
         private List<EANEvent> eventList = new List<EANEvent>();
 
+        /// <summary>
+        /// Global activity list
+        /// </summary>
         private List<EANActivity> activityList = new List<EANActivity>();
 
+        /// <summary>
+        /// The original event (the first (virtual) event for topological ordering)
+        /// </summary>
         private EANEvent globalOriginEvent;
 
         /// <summary>
@@ -28,15 +39,22 @@ namespace SystematicCapacity.UIC406Compression
             OutputDebugFiles();
         }
 
+        /// <summary>
+        /// Compress the timetable using event-activity network's longest path algorithm
+        /// </summary>
         protected override void Compress()
         {
             DoTopologicalOrdering();
         }
 
+        /// <summary>
+        /// Parse compressed event-activity data back to DataRepository
+        /// </summary>
         protected override void ParseCompressedTimetable()
         {
-
+            ParseCompressedData();
         }
+
         /// <summary>
         /// Generate the event-activity network by basic data
         /// </summary>
@@ -205,26 +223,34 @@ namespace SystematicCapacity.UIC406Compression
             }
         }
 
+        /// <summary>
+        /// Generate the original activities (connecting the originalEvent and the first event of trains)
+        /// </summary>
+        /// <param name="_eventList"></param>
+        /// <param name="_activityList"></param>
         private void GenerateOriginActivity(List<EANEvent> _eventList, List<EANActivity> _activityList)
         {
-                EANEvent firstEvent = _eventList.First();
-                EANActivity originActivity = new EANActivity()
-                {
-                    FromEvent = globalOriginEvent,
-                    ToEvent = firstEvent,
-                    Type = ActivityTypes.Origin,
-                    MinDuration = 0,
-                };
-                _activityList.Add(originActivity);
-                globalOriginEvent.OutActivityList.Add(originActivity);
-                firstEvent.InActivityList.Add(originActivity);
+            EANEvent firstEvent = _eventList.First();
+            EANActivity originActivity = new EANActivity()
+            {
+                FromEvent = globalOriginEvent,
+                ToEvent = firstEvent,
+                Type = ActivityTypes.Origin,
+                MinDuration = 0,
+            };
+            _activityList.Add(originActivity);
+            globalOriginEvent.OutActivityList.Add(originActivity);
+            firstEvent.InActivityList.Add(originActivity);
         }
 
+        /// <summary>
+        /// Outpu events and activities debug files (if the OutputLevel > 0)
+        /// </summary>
         private void OutputDebugFiles()
         {
-            if(Program.OutputLevel == 0)
+            if (Program.OutputLevel <= 0)
                 return;
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(Program.solutionDataDirectory + "debug_event.csv", false);
+            System.IO.StreamWriter sw = new System.IO.StreamWriter(Program.SolutionDataDirectory + "debug_event.csv", false);
             sw.WriteLine("TrainID,SegmentID,EventType,OriginalTime");
             foreach (EANEvent e in eventList)
             {
@@ -233,9 +259,9 @@ namespace SystematicCapacity.UIC406Compression
             }
             sw.Close();
 
-            sw = new System.IO.StreamWriter(Program.solutionDataDirectory + "debug_activity.csv", false);
+            sw = new System.IO.StreamWriter(Program.SolutionDataDirectory + "debug_activity.csv", false);
             sw.WriteLine("FromEvent,ToEvent,ActivityType,MinDuration");
-            foreach(EANActivity a in activityList)
+            foreach (EANActivity a in activityList)
             {
                 sw.WriteLine("{0},{1},{2},{3}",
                 a.FromEvent.ToString(), a.ToEvent.ToString(), a.Type.ToString(), a.MinDuration.ToString());
@@ -243,9 +269,66 @@ namespace SystematicCapacity.UIC406Compression
             sw.Close();
         }
 
+        /// <summary>
+        /// Topological ordering to calculate the longest paths (labling the earliest happening time for each event)
+        /// </summary>
         private void DoTopologicalOrdering()
         {
-            
+            // using a stack to implement the depth first searching
+            Stack<EANEvent> topologicalOrderStack = new Stack<EANEvent>();
+            topologicalOrderStack.Push(globalOriginEvent);
+
+            while (topologicalOrderStack.Count > 0)
+            {
+                EANEvent currentEvent = topologicalOrderStack.Pop();
+                foreach (EANActivity a in currentEvent.OutActivityList)
+                {
+                    EANEvent toEvent = a.ToEvent;
+                    if (toEvent.CompressedTime < currentEvent.CompressedTime + a.MinDuration)
+                    {
+                        toEvent.CompressedTime = currentEvent.CompressedTime + a.MinDuration;
+                    }
+                    topologicalOrderStack.Push(toEvent);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Parse event-activity solution to global DataRepository
+        /// </summary>
+        private void ParseCompressedData()
+        {
+            StreamWriter sw = null;
+            if (Program.OutputLevel > 0)
+            {
+                sw = new StreamWriter(Program.SolutionDataDirectory + "debug_compressedEventTime.csv");
+                sw.WriteLine("Event,OriginalTime,CompressedTime");
+            }
+
+            foreach (EANEvent e in eventList)
+            {
+                Train tr = e.BindingTrain;
+
+                Station sta = null;
+                string operation = "";
+                if (e.Type == EventTypes.Entering)
+                {
+                    sta = e.BindingSegmentTrack.FromStation;
+                    operation = "departure";
+                }
+                else if (e.Type == EventTypes.Leaving)
+                {
+                    sta = e.BindingSegmentTrack.ToStation;
+                    operation = "arrival";
+                }
+                else if (e.Type == EventTypes.Origin)
+                    continue;
+
+                tr.Timetable[sta][operation] = e.CompressedTime;
+                sw?.WriteLine("{0},{1},{2}", e.ToString(), e.OriginalTime, e.CompressedTime);
+            }
+
+            sw?.Close();
         }
     }
 
@@ -266,7 +349,7 @@ namespace SystematicCapacity.UIC406Compression
 
         internal int OriginalTime { get; set; }
 
-        internal int CompressedTime { get; set; }
+        internal int CompressedTime { get; set; } = 0;
 
         public override string ToString()
         {
@@ -290,7 +373,7 @@ namespace SystematicCapacity.UIC406Compression
 
         public override string ToString()
         {
-            return string.Format("{0}|{1}|{2}", FromEvent.ToString(), ToEvent.ToString(),Type.ToString());
+            return string.Format("{0}|{1}|{2}", FromEvent.ToString(), ToEvent.ToString(), Type.ToString());
         }
     }
 
