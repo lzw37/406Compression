@@ -1,0 +1,4 @@
+ID,Type,SegmentSequenceID,EarliestDepTime,LatestDepTime,LongestTravelTime,Profit,ParetoGroup
+C1001,InterCity,TK1-TK3,30,70,240,200,0
+C1003,InterCity,TK1-TK3,30,70,240,200,0
+C1005,InterCity,TK1-TK3,30,70,240,200,0

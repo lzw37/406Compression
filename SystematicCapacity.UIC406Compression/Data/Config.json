@@ -1,0 +1,8 @@
+{
+  "basic_data_directory": "./Data/",
+  "solution_data_directory": "./Solution/",
+
+  "compression_method": "EventActivityNetwork", //EventAcivityNetwork, IntegerProgramming, MaxPlusAutoMata
+
+  "output_file_level": "1" //0: only solution, 1: with debug file
+}
