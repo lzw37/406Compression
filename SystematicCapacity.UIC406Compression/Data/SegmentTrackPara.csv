@@ -1,0 +1,9 @@
+SegmentTrackID, TrainType, RunningTime, AccelerationAdd,DecelerationAdd
+TK0,InterCity,5,2,2
+TK1,InterCity,10,2,2
+TK3,InterCity,12,2,3
+TK5,InterCity,5,2,2
+TK8,InterCity,5,2,2
+TK2,InterCity,10,2,2
+TK4,InterCity,12,2,3
+TK6,InterCity,5,2,2

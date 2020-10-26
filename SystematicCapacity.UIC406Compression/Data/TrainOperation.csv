@@ -1,0 +1,10 @@
+TrainID,StationID,RequiredStoppingTime,MaxStoppingTime,ArrTag,DepTag,DwellTag
+C1001,S1,2,2,Arrival_Down,Departure_Down,Dwell
+C1001,S2,2,2,Arrival_Down,Departure_Down,Dwell
+C1001,S3,2,2,Arrival_Down,Departure_Down,Dwell
+C1003,S1,2,2,Arrival_Down,Departure_Down,Dwell
+C1003,S2,0,2,Arrival_Down,Departure_Down,Dwell
+C1003,S3,2,2,Arrival_Down,Departure_Down,Dwell
+C1005,S1,2,2,Arrival_Down,Departure_Down,Dwell
+C1005,S2,2,2,Arrival_Down,Departure_Down,Dwell
+C1005,S3,2,2,Arrival_Down,Departure_Down,Dwell
